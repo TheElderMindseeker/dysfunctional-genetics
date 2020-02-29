@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import Genetics
 
 main :: IO ()
-main = someFunc
+main = print "Hello, World!"
