@@ -3,8 +3,11 @@ module Main where
 import Genetics
 
 import Graphics.Gloss
+import Graphics.Gloss.Data.ViewPort
 
--- Cat bodyWidth bodyHeight headRadius tailType color
+data DemoState = DemoState Genotype Genotype
+
+-- Cat bodyWidth bodyHeight headRadius tailType color cat genotype
 data Cat = Cat Float Float Float Tail Color
 
 data Tail = Short | Long deriving Eq
@@ -52,11 +55,30 @@ drawCat (Cat bodyWidth bodyHeight headRadius tailType catColor) =
   where
     cat = (Cat bodyWidth bodyHeight headRadius tailType catColor)
 
-whiteCat :: Picture
-whiteCat = drawCat (Cat 60 30 20 Long white)
+tailGene :: Gene -> Tail
+tailGene gene
+  | gene == Dominant || gene == Mixed = Long
+  | gene == Recessive = Short
 
-blackCat :: Picture
-blackCat = drawCat (Cat 60 30 20 Short (greyN 0.5))
+colorGene :: Gene -> Color
+colorGene gene
+  | gene == Dominant || gene == Mixed = white
+  | gene == Recessive = greyN 0.5
+
+catFromGenotype :: Genotype -> Cat
+catFromGenotype genotype = (Cat 60 30 20 (tailGene (genotype!!0)) (colorGene (genotype!!1)))
+
+parents :: DemoState
+parents = DemoState [Dominant, Dominant] [Recessive, Recessive]
+
+drawDemo :: DemoState -> Picture
+drawDemo (DemoState parent1 parent2) = pictures [translate (-100) 100 $ drawCat cat1, translate 100 100 $ drawCat cat2]
+  where
+    cat1 = catFromGenotype parent1
+    cat2 = catFromGenotype parent2
+
+updateDemo :: ViewPort -> Float -> DemoState -> DemoState
+updateDemo viewport delta state = state
 
 main :: IO ()
-main = display window background (pictures [translate (-100) 100 $ whiteCat, translate 100 100 $ blackCat])
+main = simulate window background 60 parents drawDemo updateDemo

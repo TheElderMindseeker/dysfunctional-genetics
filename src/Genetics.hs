@@ -1,6 +1,6 @@
 module Genetics
     (
-      Gene
+      Gene (Dominant, Mixed, Recessive)
     , Genotype
     , Ratio
     , firstGeneration
@@ -12,7 +12,7 @@ module Genetics
 -- three states: dominant (AA), mixed (Aa), or recessive (aa).
 data Gene = Dominant
           | Mixed
-          | Recessive deriving Show
+          | Recessive deriving (Show, Eq)
 
 -- | Genotype is a list of genes.
 -- Genes in a genotype must contain different alleles (with different IDs).
