@@ -4,6 +4,7 @@ import Genetics
 
 import Graphics.Gloss
 import Graphics.Gloss.Data.ViewPort
+import Graphics.Gloss.Interface.Pure.Game
 
 data DemoState = DemoState Genotype Genotype
 
@@ -69,16 +70,60 @@ catFromGenotype :: Genotype -> Cat
 catFromGenotype genotype = (Cat 60 30 20 (tailGene (genotype!!0)) (colorGene (genotype!!1)))
 
 parents :: DemoState
-parents = DemoState [Dominant, Dominant] [Recessive, Recessive]
+parents = DemoState [Mixed, Mixed] [Mixed, Mixed]
+
+drawChildren :: [Ratio] -> Picture
+drawChildren [] = blank
+drawChildren (ratio:ratios) = pictures 
+  [translate (-50) 100 $ drawGenotype genotype,
+  drawCat (catFromGenotype genotype), 
+  translate 150 0 $ drawChildren ratios]
+  where
+    genotype = fst ratio
+
+drawGenotype :: Genotype -> Picture
+drawGenotype genotype = scale 0.1 0.1 $ text (show genotype)
 
 drawDemo :: DemoState -> Picture
-drawDemo (DemoState parent1 parent2) = pictures [translate (-100) 100 $ drawCat cat1, translate 100 100 $ drawCat cat2]
+drawDemo (DemoState parent1 parent2) = pictures 
+  [translate (-150) 200 $ drawGenotype parent1,
+  translate (-100) 100 $ drawCat cat1,
+  translate 50 200 $ drawGenotype parent2, 
+  translate 100 100 $ drawCat cat2, 
+  translate childrenOffset (-200) $ drawChildren children]
   where
     cat1 = catFromGenotype parent1
     cat2 = catFromGenotype parent2
+    children = firstGeneration parent1 parent2
+    childrenOffset = fromIntegral ((-100) * (((length children) + 4) `div` 2))
 
-updateDemo :: ViewPort -> Float -> DemoState -> DemoState
-updateDemo viewport delta state = state
+-- | Try update an element at a given position in a list.
+updateAt :: Int -> (a -> a) -> [a] -> [a]
+updateAt position update list = concat [unchanged, changed]
+  where
+    (unchanged, toChange) = splitAt position list
+    changed = 
+      if null toChange then toChange
+      else update (head toChange) : tail toChange
+
+handleDemo :: Event -> DemoState -> DemoState
+handleDemo (EventKey (Char '1') _ _ _) (DemoState parent1 parent2) = (DemoState (updateAt 0 (\x -> Dominant) parent1) parent2)
+handleDemo (EventKey (Char '2') _ _ _) (DemoState parent1 parent2) = (DemoState (updateAt 0 (\x -> Mixed) parent1) parent2)
+handleDemo (EventKey (Char '3') _ _ _) (DemoState parent1 parent2) = (DemoState (updateAt 0 (\x -> Recessive) parent1) parent2)
+handleDemo (EventKey (Char '4') _ _ _) (DemoState parent1 parent2) = (DemoState (updateAt 1 (\x -> Dominant) parent1) parent2)
+handleDemo (EventKey (Char '5') _ _ _) (DemoState parent1 parent2) = (DemoState (updateAt 2 (\x -> Mixed) parent1) parent2)
+handleDemo (EventKey (Char '6') _ _ _) (DemoState parent1 parent2) = (DemoState (updateAt 3 (\x -> Recessive) parent1) parent2)
+handleDemo (EventKey (Char '7') _ _ _) (DemoState parent1 parent2) = (DemoState parent1 (updateAt 0 (\x -> Dominant) parent2))
+handleDemo (EventKey (Char '8') _ _ _) (DemoState parent1 parent2) = (DemoState parent1 (updateAt 0 (\x -> Mixed) parent2))
+handleDemo (EventKey (Char '9') _ _ _) (DemoState parent1 parent2) = (DemoState parent1 (updateAt 0 (\x -> Recessive) parent2))
+handleDemo (EventKey (Char '0') _ _ _) (DemoState parent1 parent2) = (DemoState parent1 (updateAt 1 (\x -> Dominant) parent2))
+handleDemo (EventKey (Char '-') _ _ _) (DemoState parent1 parent2) = (DemoState parent1 (updateAt 2 (\x -> Mixed) parent2))
+handleDemo (EventKey (Char '=') _ _ _) (DemoState parent1 parent2) = (DemoState parent1 (updateAt 3 (\x -> Recessive) parent2))
+handleDemo event state = state
+
+updateDemo :: Float -> DemoState -> DemoState
+updateDemo delta state = state
+
 
 main :: IO ()
-main = simulate window background 60 parents drawDemo updateDemo
+main = play window background 60 parents drawDemo handleDemo updateDemo
