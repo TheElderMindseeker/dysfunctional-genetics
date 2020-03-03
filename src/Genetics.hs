@@ -1,25 +1,18 @@
 module Genetics
     (
-      Dominance
-    , Allele
-    , Gene
+      Gene
     , Genotype
     , Ratio
     , firstGeneration
-    , inferPhenotype
     ) where
 
--- | In genetics an allele can be either dominant or recessive.
--- Dominant alleles take upper hand over recessive in genes.
-data Dominance = Dominant
-               | Recessive deriving Show
-
--- | Allele is a combination of dominance and integer identifier.
--- Integer ID is used to distinguish between different types of alleles.
-type Allele = (Dominance, Integer)
-
--- | Gene consists of two alleles.
-type Gene = (Allele, Allele)
+-- | A type representing a single gene.
+-- In genetics, a gene consists of two alleles which can be in two states:
+-- dominant or recessive. As the sequence is not important, a gene can be in
+-- three states: dominant (AA), mixed (Aa), or recessive (aa).
+data Gene = Dominant
+          | Mixed
+          | Recessive deriving Show
 
 -- | Genotype is a list of genes.
 -- Genes in a genotype must contain different alleles (with different IDs).
@@ -29,13 +22,10 @@ type Genotype = [Gene]
 type Ratio = (Genotype, Integer)
 
 -- | Helper function for calculating crossing ratios.
-dominance :: Allele -> Integer
-dominance (Dominant, _) = 1
-dominance (Recessive, _) = 0
-
--- | Helper function for calculating crossing ratios.
-geneDominance :: Gene -> Integer
-geneDominance gene = dominance (fst gene) + dominance (snd gene)
+dominance :: Gene -> Integer
+dominance Dominant = 2
+dominance Mixed = 1
+dominance Recessive = 0
 
 -- | Normalizes ratios such that all of them are mutually prime.
 normalizeRatios :: [(any, Integer)]
@@ -53,20 +43,14 @@ crossTwoGenes :: (Gene, Gene)       -- ^ Pair of genes to cross
 crossTwoGenes (fGene, sGene) = normalizeRatios filteredRatios
   where
     filteredRatios = filter zeroRatio [dominant, mixed, recessive]
-    dominant = (dominantGene, fDom * sDom)
-    mixed = (mixedGene, fDom * sRec + fRec * sDom)
-    recessive = (recessiveGene, fRec * sRec)
-    fDom = geneDominance fGene
+    dominant = (Dominant, fDom * sDom)
+    mixed = (Mixed, fDom * sRec + fRec * sDom)
+    recessive = (Recessive, fRec * sRec)
+    fDom = dominance fGene
     fRec = 2 - fDom
-    sDom = geneDominance sGene
+    sDom = dominance sGene
     sRec = 2 - sDom
     zeroRatio (_, ratio) = ratio /= 0
-    alleleId = snd (fst fGene)
-    dominantAllele = (Dominant, alleleId)
-    recessiveAllele = (Recessive, alleleId)
-    dominantGene = (dominantAllele, dominantAllele)
-    mixedGene = (dominantAllele, recessiveAllele)
-    recessiveGene = (recessiveAllele, recessiveAllele)
 
 -- | Helper function for generating children ratio.
 -- The function takes a single gene and prepends all the genotypes in the list
@@ -100,9 +84,3 @@ firstGeneration firstParent secondParent = normalizeRatios genotypes
     genotypes = constructGenotypes crossedGenes
     crossedGenes = map crossTwoGenes genePairs
     genePairs = zip firstParent secondParent
-
--- | Infer organism phenotype from its genotype and allele behaviour.
-inferPhenotype :: Genotype           -- ^ Organism genotype
-               -> (Allele -> trait)  -- ^ Allele behaviour mapping
-               -> [trait]            -- ^ Organism phenotype
-inferPhenotype _ _ = []
