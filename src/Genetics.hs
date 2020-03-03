@@ -4,7 +4,11 @@ module Genetics
     , Genotype
     , Ratio
     , firstGeneration
+    , firstGenerationRatio
     ) where
+
+import qualified Data.Map as Map
+import Data.Maybe
 
 -- | A type representing a single gene.
 -- In genetics, a gene consists of two alleles which can be in two states:
@@ -12,7 +16,10 @@ module Genetics
 -- three states: dominant (AA), mixed (Aa), or recessive (aa).
 data Gene = Dominant
           | Mixed
-          | Recessive deriving (Show, Eq)
+          | Recessive deriving (Show, Eq, Ord)
+
+-- instance Ord Gene where
+--     compare fGene sGene = compare (dominance fGene) (dominance sGene)
 
 -- | Genotype is a list of genes.
 -- Genes in a genotype must contain different alleles (with different IDs).
@@ -84,3 +91,37 @@ firstGeneration firstParent secondParent = normalizeRatios genotypes
     genotypes = constructGenotypes crossedGenes
     crossedGenes = map crossTwoGenes genePairs
     genePairs = zip firstParent secondParent
+
+-- | Helper function for multiplying all ratios by an integer.
+multiplyRatio :: ([Ratio], Integer)  -- ^ Ratios and integer to multiply by
+              -> [Ratio]             -- ^ Updated ratios
+multiplyRatio (ratios, multiplier) = map multiply ratios
+  where
+    multiply (gene, geneRatio) = (gene, geneRatio * multiplier)
+
+-- | Helper function for merging ratios.
+mergeRatios :: [Ratio]  -- ^ First ratio list
+            -> [Ratio]  -- ^ Second ratio list
+            -> [Ratio]  -- ^ Merged ratios
+mergeRatios baseList [] = baseList
+mergeRatios baseList (x:xs) = mergeRatios (Map.toList extendedList) xs
+  where
+    extendedList = if isJust gtRatio
+                   then Map.insert genotype (fromJust gtRatio + ratio) baseMap
+                   else Map.insert genotype ratio baseMap
+    gtRatio = Map.lookup genotype baseMap
+    baseMap = Map.fromList baseList
+    (genotype, ratio) = x
+
+-- | Calculates the ratios of genotypes in the first generation.
+firstGenerationRatio :: Ratio    -- ^ Ratio of the first parent
+                     -> Ratio    -- ^ Ratio of the second parent
+                     -> [Ratio]  -- ^ List of children genotypes with ratios
+firstGenerationRatio (fParent, fRatio) (sParent, sRatio) = result
+  where
+    result = normalizeRatios mergedCrossings
+    mergedCrossings = foldl1 mergeRatios crossings
+    crossings = map multiplyRatio [first, mixed, second]
+    first = (firstGeneration fParent fParent, fRatio^2)
+    mixed = (firstGeneration fParent sParent, 2 * (fRatio * sRatio))
+    second = (firstGeneration sParent sParent, sRatio^2)
