@@ -1,6 +1,6 @@
 module Main where
 
-import Genetics
+import           Genetics
 
 main :: IO ()
 main = print "Not implemented"
