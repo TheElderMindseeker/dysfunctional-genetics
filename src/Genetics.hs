@@ -4,6 +4,7 @@ module Genetics
     , Genotype
     , simpleTrait
     , incDomTrait
+    , multiTrait
     , phenotype
     ) where
 
@@ -53,6 +54,21 @@ incDomTrait index dominant domValue medValue recValue genotype
     where
         gene = genotype ! index
 
+-- | Multiple alleles traits may have more than two alleles variants.
+-- Though a single genotype can hold only up to two alleles, multiple allele
+-- variants may be present in the population.
+multiTrait :: Ord allele
+              => Int              -- ^ Gene index in genotype
+              -> [allele]         -- ^ Allele dominance order
+              -> (allele -> any)  -- ^ Allele to trait correspondance
+              -> Genotype allele  -- ^ Genotype
+              -> any              -- ^ Phenotype trait
+multiTrait index domOrder toTrait genotype = toTrait domAllele
+  where
+    domAllele = head (filter inGene domOrder)
+    inGene allele = Set.member allele (genotype ! index)
+
+-- | Infers the organism phenotype from its genotype.
 phenotype :: Ord allele
              => Genotype allele           -- ^ Organism genotype
              -> [Genotype allele -> any]  -- ^ Traits
