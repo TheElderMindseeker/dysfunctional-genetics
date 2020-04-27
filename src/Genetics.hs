@@ -2,6 +2,7 @@ module Genetics
     (
       Gene
     , Genotype
+    , crossGenes
     , simpleTrait
     , incDomTrait
     , multiTrait
@@ -9,7 +10,9 @@ module Genetics
     ) where
 
 import Data.Array
+import Data.Ratio
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- | A type representing a single gene.
 -- In genetics, each organism holds two copies of each gene in its genotype.
@@ -20,6 +23,19 @@ type Gene allele = Set.Set allele
 
 -- | Genotype is array of genes.
 type Genotype allele = Array Int (Gene allele)
+
+crossGenes :: Ord allele
+              => Gene allele
+              -> Gene allele
+              -> [(Gene allele, Ratio Int)]
+crossGenes gene_a gene_b = Map.assocs geneRatios
+  where
+    geneRatios = foldl addGene Map.empty combinations
+    addGene geneMap gene = Map.insertWith (+) gene (1 % norm) geneMap
+    norm = length combinations
+    combinations = [Set.fromList [x, y]
+                    | x <- Set.toList gene_a
+                    , y <- Set.toList gene_b]
 
 -- | Simple trait has two possible allele values with strict dominance.
 simpleTrait :: Ord allele

@@ -16,6 +16,24 @@ toColor symbol
 
 main :: IO ()
 main = hspec $ do
+    describe "Gene crossing tests" $ do
+        let gene_aa = Set.fromList "aa"
+        let gene_ab = Set.fromList "ab"
+        let gene_bb = Set.fromList "bb"
+        let gene_cd = Set.fromList "cd"
+
+        it "Crossing fully dominant genes" $
+            let crossedGenes = crossGenes gene_aa gene_bb in
+                length crossedGenes `shouldBe` 1
+
+        it "Crossing mixed genes" $
+            let crossedGenes = crossGenes gene_ab gene_ab in
+                length crossedGenes `shouldBe` 3
+
+        it "Crossing multiple alleles genes" $
+            let crossedGenes = crossGenes gene_ab gene_cd in
+                length crossedGenes `shouldBe` 4
+
     describe "Simple trait tests" $ do
         let longShortTrait = simpleTrait 0 'L' "long" "short"
 
