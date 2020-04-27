@@ -34,6 +34,23 @@ main = hspec $ do
             let crossedGenes = crossGenes gene_ab gene_cd in
                 length crossedGenes `shouldBe` 4
 
+    describe "Genotype crossing tests" $ do
+        let gene_aa = Set.fromList "aa"
+        let gene_ab = Set.fromList "ab"
+        let gene_cd = Set.fromList "cd"
+        let genotype_a = listArray (0, 1) [gene_aa, gene_cd]
+        let genotype_b = listArray (0, 1) [gene_ab, gene_cd]
+
+        it "Crossing genotypes" $ do
+            let crossedGtypes = crossGenotypes genotype_a genotype_b
+            length (crossedGtypes ! 0) `shouldBe` 2
+            length (crossedGtypes ! 1) `shouldBe` 3
+
+        it "Crossing genotype with itself" $ do
+            let crossedGtypes = crossGenotypes genotype_a genotype_a
+            length (crossedGtypes ! 0) `shouldBe` 1
+            length (crossedGtypes ! 1) `shouldBe` 3
+
     describe "Simple trait tests" $ do
         let longShortTrait = simpleTrait 0 'L' "long" "short"
 

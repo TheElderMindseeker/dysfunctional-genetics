@@ -1,8 +1,11 @@
 module Genetics
     (
       Gene
+    , GeneRatio
     , Genotype
+    , GenotypeRatio
     , crossGenes
+    , crossGenotypes
     , simpleTrait
     , incDomTrait
     , multiTrait
@@ -21,21 +24,38 @@ import qualified Data.Map as Map
 -- as (Aa) are the same as (aA), and are, therefore, represented by the set.
 type Gene allele = Set.Set allele
 
+type GeneRatio allele = (Gene allele, Ratio Int)
+
 -- | Genotype is array of genes.
 type Genotype allele = Array Int (Gene allele)
+
+-- | Genotype with gene ratios.
+type GenotypeRatio allele = Array Int [GeneRatio allele]
 
 crossGenes :: Ord allele
               => Gene allele
               -> Gene allele
               -> [(Gene allele, Ratio Int)]
-crossGenes gene_a gene_b = Map.assocs geneRatios
+crossGenes aGene bGene = Map.assocs geneRatios
   where
     geneRatios = foldl addGene Map.empty combinations
     addGene geneMap gene = Map.insertWith (+) gene (1 % norm) geneMap
     norm = length combinations
     combinations = [Set.fromList [x, y]
-                    | x <- Set.toList gene_a
-                    , y <- Set.toList gene_b]
+                    | x <- Set.toList aGene
+                    , y <- Set.toList bGene]
+
+crossGenotypes :: Ord allele
+                  => Genotype allele       -- ^ First genotype
+                  -> Genotype allele       -- ^ Second genotype
+                  -> GenotypeRatio allele  -- ^ Children genotype ratios
+crossGenotypes aGtype bGtype = listArray (0, resultLen) crossedGenes
+  where
+    resultLen = min (snd (bounds aGtype)) (snd (bounds bGtype))
+    crossedGenes = zipWith (curry wCrossGenes) aList bList
+    wCrossGenes (aGene, bGene) = crossGenes aGene bGene
+    aList = elems aGtype
+    bList = elems bGtype
 
 -- | Simple trait has two possible allele values with strict dominance.
 simpleTrait :: Ord allele
