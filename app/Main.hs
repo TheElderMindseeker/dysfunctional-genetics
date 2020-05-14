@@ -16,9 +16,9 @@ window = InWindow "Genetics Demo" (640, 480) (10, 10)
 -- | Draws a Punnett square of a genetic crossover of 2 parents
 punnettSquare 
     :: (Show allele, Ord allele) 
-    => Genotype allele 
-    -> Genotype allele 
-    -> Picture
+    => Genotype allele            -- ^ First parent
+    -> Genotype allele            -- ^ Second parent
+    -> Picture                    -- ^ Resulting square
 -- | Note: I do understand that we have a genetics library
 -- | But it doesn't work for constructing true punnett squares
 --
@@ -31,9 +31,9 @@ punnettSquare p1 p2 = punnettSquare' (elems p1) (elems p2)
 -- | Helper function to deal with local transforms
 punnettSquare'
     :: (Show allele, Ord allele) 
-    => [Gene allele] 
-    -> [Gene allele] 
-    -> Picture
+    => [Gene allele]            -- ^ First parent's genes
+    -> [Gene allele]            -- ^ Second parent's genes
+    -> Picture                  -- ^ Square for single pair of genes
 punnettSquare' [] _ = blank
 punnettSquare' (e1:p1) (e2:p2) = pictures [drawRow e2, 
   translate (-100) (-200) (drawColumn e1),
@@ -43,8 +43,8 @@ punnettSquare' (e1:p1) (e2:p2) = pictures [drawRow e2,
 -- | Draws a row from a gene
 drawRow
     :: (Show allele, Ord allele) 
-    => Gene allele
-    -> Picture
+    => Gene allele              -- ^ Gene to draw
+    -> Picture                  -- ^ Drawn Gene
 drawRow gene = scale 0.5 0.5 (gene2 <> translate spacing 0 gene1)
   where
     geneList = Set.toList gene
@@ -55,8 +55,8 @@ drawRow gene = scale 0.5 0.5 (gene2 <> translate spacing 0 gene1)
 -- | Draws a column from a Gene
 drawColumn
     :: (Show allele, Ord allele) 
-    => Gene allele
-    -> Picture
+    => Gene allele              -- ^ Gene to draw
+    -> Picture                  -- ^ Drawn Gene
 drawColumn gene = scale 0.5 0.5 (gene2 <> translate 0 spacing gene1)
   where
     geneList = Set.toList gene
@@ -67,9 +67,9 @@ drawColumn gene = scale 0.5 0.5 (gene2 <> translate 0 spacing gene1)
 -- | Draws the inner part of the PunnetSquare with the results of the 2 crossed genes 
 drawSquare
     :: (Show allele, Ord allele) 
-    => Gene allele
-    -> Gene allele
-    -> Picture
+    => Gene allele              -- ^ First gene to cross
+    -> Gene allele              -- ^ Second gene to cross
+    -> Picture                  -- ^ A square of genes
 drawSquare p1 p2 = scale 0.5 0.5 (pictures[Text (show (g1 !! 0)),
   translate (-200) 0 $ Text (show (g1 !! 1)),
   translate 0 (-200) $ Text (show (g2 !! 0)),
@@ -89,9 +89,9 @@ pairToList (x, y) = [x, y]
 -- | Draws a genetics branch diagrams
 branchDiagram
     :: (Show allele,Ord allele)
-    => Genotype allele 
-    -> Genotype allele 
-    -> Picture
+    => Genotype allele          -- ^ First genotype
+    -> Genotype allele          -- ^ Second genotype
+    -> Picture                  -- ^ Branch diagrams
 branchDiagram p1 p2 = scale 0.5 0.5 (branchDiagram' (elems geneRatio) (zip (elems p1) (elems p2)))
   where 
     geneRatio = crossGenotypes p1 p2
@@ -99,9 +99,9 @@ branchDiagram p1 p2 = scale 0.5 0.5 (branchDiagram' (elems geneRatio) (zip (elem
 -- | Draws all of the diagrams for a crossover (all parent genes + results)
 branchDiagram'
     :: (Show allele,Ord allele)
-    => [[GeneRatio allele]]
-    -> [(Gene allele, Gene allele)]
-    -> Picture
+    => [[GeneRatio allele]]         -- ^ crossGenotypes result
+    -> [(Gene allele, Gene allele)] -- ^ Zipped elements of the parents
+    -> Picture                      -- ^ Branch diagrams
 branchDiagram' [] _ = blank
 branchDiagram' (ratio:ratios) (parents:allAlleles) = pictures [drawDiagram ratio parents, 
   translate spacing 0 $ branchDiagram' ratios allAlleles]
@@ -112,9 +112,9 @@ branchDiagram' (ratio:ratios) (parents:allAlleles) = pictures [drawDiagram ratio
 -- | This particular function appends the parent alleles
 drawDiagram
     :: (Show allele,Ord allele)
-    => [GeneRatio allele]
-    -> (Gene allele, Gene allele)
-    -> Picture
+    => [GeneRatio allele]         -- ^ Gene group
+    -> (Gene allele, Gene allele) -- ^ A pair of parent genes
+    -> Picture                    -- ^ Branch diagram
 drawDiagram ratios parents = translate 0 yShift (parentPictures) <> drawDiagram' ratios
   where
     yShift = 1000
@@ -126,8 +126,8 @@ drawDiagram ratios parents = translate 0 yShift (parentPictures) <> drawDiagram'
 -- | This function renders a line of alllels
 drawDiagram'
     :: (Show allele,Ord allele)
-    => [GeneRatio allele]
-    -> Picture
+    => [GeneRatio allele]       -- ^ Alleles to draw
+    -> Picture                  -- ^ A line of alleles
 drawDiagram' [] = blank
 drawDiagram' (ratio:ratios) = pictures [drawGene ratio,
   translate spacing 0 $ drawDiagram' ratios]
@@ -137,14 +137,40 @@ drawDiagram' (ratio:ratios) = pictures [drawGene ratio,
 -- | Draws a single GeneRatio, by showing the genes above and ratio below
 drawGene
     :: (Show allele, Ord allele)
-    => GeneRatio allele
-    -> Picture
+    => GeneRatio allele          -- ^ Genes to draw
+    -> Picture                   -- ^ A line of genes
 drawGene ratio = pictures [translate xShift yShift allele, probability]
   where
     allele = Text (show (Set.toList (fst ratio)))
     probability = Text (show (snd ratio))
     yShift = 150
     xShift = 100
+
+-- | Draws a legend chart using provided traits and GenotypeRatio
+drawLegend 
+  :: (Show allele, Ord allele, Show trait)
+  => GenotypeRatio allele       -- ^ Ratio of genotypes, from crossGenotypes
+  -> [Genotype allele -> trait] -- ^ Traits
+  -> Picture                    -- ^ legend chart
+drawLegend genotypeRatio traits = scale 0.5 0.5 (allelePictures <> ((translate 1000 0) phenotypePictures))
+  where
+    -- Conversion from GenotypeRatio to [ [ ([allele], [traits]) ] ]
+    flatGeneRatio = concat (elems genotypeRatio)
+    genes = map fst flatGeneRatio
+    toGenotype = map (\t -> listArray (0, 0) [t]) genes
+    -- [[[trait]]]
+    toPhenotype = map (\t -> phenotype t traits) (map (\t->listArray (0, 0) [t]) genes)
+    -- [[allele]]
+    toAlleles = map Set.toList genes
+
+    -- Conversion to Pictures
+    -- I have no idea anymore. HERE the foldl method works, but it fails in other cases
+    -- I will simply embrace the insanity that envelops me
+    -- Just like "ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn"
+    allelePictures = foldl (\x y -> (translate 0 500 x) <> y) blank (map (Text . show) toAlleles)
+    phenotypePictures = foldl (\x y -> (translate 0 500 x) <> y) blank 
+      (map ((foldl (\x y -> (translate 1000 0 x) <> y) blank) . map (Text . show)) toPhenotype)
+
 
 -- | Parent genomes definition
 parent1 :: Genotype Char
@@ -181,5 +207,12 @@ parent6 = listArray (0, 0) [gene_bb]
 
 -- | Main function
 main :: IO ()
-main = display window white ((punnettSquare parent3 parent4) 
-    <> (translate 0 (-1000) (branchDiagram parent3 parent4)))
+main = display window white (
+  (punnettSquare parent3 parent4)
+  <> (translate 0 (-1000) (branchDiagram parent3 parent4))
+  <> (translate 1000 0) (drawLegend result traits))
+  where
+    result = crossGenotypes parent3 parent4
+    longShortTrait = simpleTrait 0 'A' "long tail" "short tail"
+    blackWhiteTrait = simpleTrait 0 'B' "black coat" "white coat"
+    traits = [longShortTrait, blackWhiteTrait]
