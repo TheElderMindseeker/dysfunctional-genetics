@@ -5,27 +5,30 @@ import qualified Data.Set                      as Set
 import           Data.Array
 import           Data.Ratio
 import           Debug.Trace
-
 import           Graphics.Gloss
 import           Graphics.Gloss.Data.ViewPort
 
--- | Required Gloss structures
--- | Window to render to
+
+-- | Gloss window to render the elements to
 window :: Display
 window = InWindow "Genetics Demo" (640, 480) (10, 10)
 
--- | Note: I do understand that we have a genetics library
--- | But it doesn't work for constructing true punnett squares
+-- | Draws a Punnett square of a genetic crossover of 2 parents
 punnettSquare 
     :: (Show allele, Ord allele) 
     => Genotype allele 
     -> Genotype allele 
     -> Picture
---punnettSquare p1 p2 = (drawRow ((elems p2) !! 0)) 
---  <> translate (-100) (-200) (drawColumn ((elems p1) !! 0))
---  <> translate (100) (-100) (drawSquare ((elems p1) !! 0) ((elems p2) !! 0))
+-- | Note: I do understand that we have a genetics library
+-- | But it doesn't work for constructing true punnett squares
+--
+-- Not sure why but I can't replicate the automagic of pictures() and translate()
+-- I tried reading the code, but don't think I found the right parts
+-- It appears that pictures is evaluated at runtime at once,
+--  so translations appear local with pictures(), but global with other funcs
 punnettSquare p1 p2 = punnettSquare' (elems p1) (elems p2)
 
+-- | Helper function to deal with local transforms
 punnettSquare'
     :: (Show allele, Ord allele) 
     => [Gene allele] 
@@ -37,6 +40,7 @@ punnettSquare' (e1:p1) (e2:p2) = pictures [drawRow e2,
   translate (100) (-100) (drawSquare e1 e2),
   translate 500 0 (punnettSquare' p1 p2)]
 
+-- | Draws a row from a gene
 drawRow
     :: (Show allele, Ord allele) 
     => Gene allele
@@ -48,6 +52,7 @@ drawRow gene = scale 0.5 0.5 (gene2 <> translate spacing 0 gene1)
     gene2 = Text (show (geneList !! 1))
     spacing = 200
 
+-- | Draws a column from a Gene
 drawColumn
     :: (Show allele, Ord allele) 
     => Gene allele
@@ -59,6 +64,7 @@ drawColumn gene = scale 0.5 0.5 (gene2 <> translate 0 spacing gene1)
     gene2 = Text (show (geneList !! 1))
     spacing = 200
 
+-- | Draws the inner part of the PunnetSquare with the results of the 2 crossed genes 
 drawSquare
     :: (Show allele, Ord allele) 
     => Gene allele
@@ -74,19 +80,18 @@ drawSquare p1 p2 = scale 0.5 0.5 (pictures[Text (show (g1 !! 0)),
     g1 = map pairToList g1list
     g2 = map pairToList g2list
 
+-- | Convert a tuple pair of values into an array
 pairToList
     :: (a, a)
     -> [a]
 pairToList (x, y) = [x, y]
 
+-- | Draws a genetics branch diagrams
 branchDiagram
     :: (Show allele,Ord allele)
     => Genotype allele 
     -> Genotype allele 
     -> Picture
--- Not sure why but I can't replicate the automagic of pictures() and translate()
--- I tried reading the code, but couldn't quite find the right parts
--- It appears that pictures is evaluated at runtime, rembmering the translation
 branchDiagram p1 p2 = scale 0.5 0.5 (branchDiagram' (elems geneRatio) (zip (elems p1) (elems p2)))
   where 
     geneRatio = crossGenotypes p1 p2
@@ -101,7 +106,6 @@ branchDiagram' [] _ = blank
 branchDiagram' (ratio:ratios) (parents:allAlleles) = pictures [drawDiagram ratio parents, 
   translate spacing 0 $ branchDiagram' ratios allAlleles]
   where
-    -- TODO: Change somehow later
     spacing = 5000
 
 -- | Draws the diagram for a single gene group (single gene pair + results)
@@ -113,7 +117,6 @@ drawDiagram
     -> Picture
 drawDiagram ratios parents = translate 0 yShift (parentPictures) <> drawDiagram' ratios
   where
-    -- TODO: MAKE SENSIBLE
     yShift = 1000
     spacing = 500
     p1 = Text (show (Set.toList (fst parents)))
@@ -143,6 +146,7 @@ drawGene ratio = pictures [translate xShift yShift allele, probability]
     yShift = 150
     xShift = 100
 
+-- | Parent genomes definition
 parent1 :: Genotype Char
 parent1 = listArray (0, 0) [gene_aa]
   where
@@ -175,6 +179,7 @@ parent6 = listArray (0, 0) [gene_bb]
   where
     gene_bb = Set.fromList "bb"
 
+-- | Main function
 main :: IO ()
-main = display window white (punnettSquare parent3 parent4)
---main = display window white (branchDiagram parent3 parent4)
+main = display window white ((punnettSquare parent3 parent4) 
+    <> (translate 0 (-1000) (branchDiagram parent3 parent4)))
