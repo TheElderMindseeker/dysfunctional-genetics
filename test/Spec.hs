@@ -97,12 +97,12 @@ main = hspec $ do
               in  colorTrait genotype `shouldBe` "blue"
 
     describe "Phenotype tests" $ do
-        let genotype = listArray (0, 1) [Set.fromList "Ls", Set.fromList "Wb"]
+        let gtype      = genotype ["Ls", "Wb"]
         let tailTrait  = simpleTrait 0 'L' "long" "short"
         let colorTrait = incDomTrait 1 'W' "white" "white & black" "black"
         let traits     = [tailTrait, colorTrait]
 
         it "Calculate phenotype from genotype"
-            $          phenotype genotype traits
+            $          phenotype gtype traits
             `shouldBe` ["long", "white & black"]
 

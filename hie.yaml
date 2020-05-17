@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: ./src
+      component: dysfunctional-genetics:lib
+    - path: ./app
+      component: dysfunctional-genetics:exe:dysfunctional-genetics-exe
+    - path: ./test
+      component: dysfunctional-genetics:test:dysfunctional-genetics-test

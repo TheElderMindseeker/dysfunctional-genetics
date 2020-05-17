@@ -9,6 +9,7 @@ module Genetics
     , simpleTrait
     , incDomTrait
     , multiTrait
+    , genotype
     , phenotype
     )
 where
@@ -137,6 +138,15 @@ multiTrait index domOrder toTrait genotype = toTrait domAllele
   where
     domAllele = head (filter inGene domOrder)
     inGene allele = Set.member allele (genotype ! index)
+
+-- | Constructs genotype from list of genes
+genotype
+    :: Ord allele
+    => [[allele]]        -- ^ Organism genotype as a list
+    -> Genotype allele   -- ^ Constructed organism genotype
+genotype alleles = listArray (0, length alleles - 1) allelesAsSets
+  where
+    allelesAsSets = map Set.fromList alleles
 
 -- | Infers the organism phenotype from its genotype.
 phenotype
